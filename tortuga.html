@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        canvas {
+            border: 10px solid black;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="600" height="400"></canvas>
+    <script>
+        // Variables globales
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const spriteWidth = 150;
+        const spriteHeight = 200;
+        const spriteImage = new Image();
+        spriteImage.src = 'tortuga.png'; // Asegúrate de cambiar la ruta al sprite
+
+        const obstacleWidth = 50; // Ajusta el ancho del obstáculo
+        const obstacleHeight = 50; // Ajusta el alto del obstáculo
+        const obstacleImage = new Image();
+        obstacleImage.src = 'obstaculo.png'; // Asegúrate de cambiar la ruta al sprite de obstáculos
+
+        let currentFrame = 0;
+        let frameCount = 0;
+        let jumping = false;
+        let jumpHeight = 0;
+        let jumpSpeed = 10;
+        let gravity = 1;
+        let y = canvas.height - spriteHeight;
+        let currentRow = 0;
+
+        let obstacles = [];
+
+        // Configurar eventos
+        function setupEventListeners() {
+            document.addEventListener('keydown', handleKeyDown);
+        }
+
+        function handleKeyDown(event) {
+            if (event.key === 'ArrowUp' && !jumping) {
+                startJump();
+            }
+        }
+
+        // Iniciar salto
+        function startJump() {
+            jumping = true;
+            jumpHeight = 0;
+            // Reiniciar la velocidad de salto para evitar problemas al re-saltar
+            jumpSpeed = 10;  
+            currentRow = 1;
+        }
+
+        // Dibujar el personaje en el canvas
+        function draw() {
+            clearCanvas();
+            drawSprite();
+            updateFrame();
+            handleJump();
+            drawObstacles();
+            updateObstacles();
+            detectCollisions();
+            requestAnimationFrame(draw);
+        }
+
+        // Limpiar el canvas
+        function clearCanvas() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Dibujar el sprite
+        function drawSprite() {
+            ctx.drawImage(spriteImage, currentFrame * spriteWidth, currentRow * spriteHeight,
+                spriteWidth, spriteHeight, 0, y, spriteWidth, spriteHeight);
+        }
+
+        // Actualizar el frame del sprite
+        function updateFrame() {
+            frameCount++;
+            if (frameCount % 10 === 0) {
+                currentFrame = (currentFrame + 1) % 4;
+            }
+        }
+
+        // Manejar el salto
+        function handleJump() {
+            if (jumping) {
+                jumpHeight += jumpSpeed;
+                y -= jumpSpeed;
+                jumpSpeed -= gravity;
+                //IF - Cuando el personaje llega al suelo
+                if (jumpSpeed <= 0 && y >= canvas.height - spriteHeight) { 
+                    jumping = false;
+                    jumpSpeed = 10;
+                    currentRow = 0; // Vuelve a la primera fila para correr
+                }
+            }
+        }
+
+        // Crear obstáculos
+        function createObstacle() {
+            const x = canvas.width;
+            const y = canvas.height - obstacleHeight;
+            obstacles.push({ x, y });
+        }
+
+        // Dibujar obstáculos
+        function drawObstacles() {
+            obstacles.forEach(obstacle => {
+                ctx.drawImage(obstacleImage, 0, 0, obstacleWidth, obstacleHeight,
+                    obstacle.x, obstacle.y, obstacleWidth, obstacleHeight);
+            });
+        }
+
+        // Actualizar posición de los obstáculos
+        function updateObstacles() {
+            obstacles.forEach(obstacle => {
+                obstacle.x -= 5; // Velocidad del obstáculo
+            });
+
+            // Eliminar obstáculos que ya no están en la pantalla
+            obstacles = obstacles.filter(obstacle => obstacle.x + obstacleWidth > 0);
+
+            // Crear nuevos obstáculos periódicamente
+            if (frameCount % 150 === 0) {
+                createObstacle();
+            }
+        }
+
+        // Detectar colisiones
+        function detectCollisions() {
+            obstacles.forEach(obstacle => {
+                if (0 < obstacle.x + obstacleWidth && 0 + spriteWidth > obstacle.x &&
+                    y < obstacle.y + obstacleHeight && y + spriteHeight > obstacle.y) {
+                    if (!jumping) {
+                        console.log("Chocó contra el obstáculo");
+                    } else {
+                        console.log("Saltó sobre el obstáculo");
+                    }
+                }
+            });
+        }
+
+        // Iniciar el juego
+        function init() {
+            setupEventListeners();
+            spriteImage.onload = draw;
+        }
+
+        // Iniciar el juego una vez que el documento esté listo
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
